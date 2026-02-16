@@ -1,0 +1,42 @@
+name: Cypress Multi-Browser Tests
+on: [push, pull_request]
+
+jobs:
+  cypress-run:
+    runs-on: ubuntu-latest
+    strategy:
+      # Empêche d'annuler les autres navigateurs si l'un d'eux échoue
+      fail-fast: false
+      matrix:
+        # Liste des navigateurs à tester
+        browser: [chrome, firefox, edge]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Start Application (Docker Compose)
+        run: docker-compose up -d
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          # On spécifie le navigateur de la matrice
+          browser: ${{ matrix.browser }}
+          # On attend que l'app sur le port 3000 réponde avant de lancer Cypress
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120 # 2 minutes max pour le boot docker
+
+      - name: Upload Videos
+        uses: actions/upload-artifact@v4
+        if: always() # Télécharge même si le test échoue
+        with:
+          name: cypress-videos-${{ matrix.browser }}
+          path: cypress/videos
+
+      - name: Upload Screenshots (on failure)
+        uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.browser }}
+          path: cypress/screenshots
