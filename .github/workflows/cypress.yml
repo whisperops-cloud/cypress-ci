@@ -40,6 +40,16 @@ jobs:
         with:
           name: cypress-screenshots-${{ matrix.browser }}
           path: cypress/screenshots
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: ${{ matrix.browser }}
+          start: docker-compose up -d
+          wait-on: 'http://localhost:3000'
+          wait-on-timeout: 120
+          # --- AJOUTS POUR LE DASHBOARD ---
+          record: true
         env:
           # For recording and parallelization to work you must set your CYPRESS_RECORD_KEY
           # in GitHub repo → Settings → Secrets → Actions
