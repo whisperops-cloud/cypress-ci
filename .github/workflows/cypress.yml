@@ -5,31 +5,35 @@ jobs:
   cypress-run:
     runs-on: ubuntu-latest
     strategy:
-      # Empêche d'annuler les autres navigateurs si l'un d'eux échoue
       fail-fast: false
       matrix:
-        # Liste des navigateurs à tester
         browser: [chrome, firefox, edge]
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Start Application (Docker Compose)
-        run: docker compose up -d
+      # On ne lance pas docker-compose ici, on laisse l'action Cypress s'en charger 
+      # via l'option 'start', c'est plus propre pour la gestion du cycle de vie.
 
-      - name: Cypress run
+      - name: Cypress run (with Dashboard)
         uses: cypress-io/github-action@v6
         with:
-          # On spécifie le navigateur de la matrice
           browser: ${{ matrix.browser }}
-          # On attend que l'app sur le port 3000 réponde avant de lancer Cypress
+          # On démarre l'app ici
+          start: docker compose up -d
           wait-on: 'http://localhost:3000'
-          wait-on-timeout: 120 # 2 minutes max pour le boot docker
+          wait-on-timeout: 120
+          # Enregistrement sur le dashboard
+          record: true
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Ces étapes ne s'exécutent qu'APRES la fin des tests
       - name: Upload Videos
         uses: actions/upload-artifact@v4
-        if: always() # Télécharge même si le test échoue
+        if: always()
         with:
           name: cypress-videos-${{ matrix.browser }}
           path: cypress/videos
@@ -40,19 +44,3 @@ jobs:
         with:
           name: cypress-screenshots-${{ matrix.browser }}
           path: cypress/screenshots
-
-      - name: Cypress run
-        uses: cypress-io/github-action@v6
-        with:
-          browser: ${{ matrix.browser }}
-          start: docker compose up -d
-          wait-on: 'http://localhost:3000'
-          wait-on-timeout: 120
-          # --- AJOUTS POUR LE DASHBOARD ---
-          record: true
-        env:
-          # For recording and parallelization to work you must set your CYPRESS_RECORD_KEY
-          # in GitHub repo → Settings → Secrets → Actions
-          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-          # Creating a token https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
