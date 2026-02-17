@@ -45,7 +45,7 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           browser: ${{ matrix.browser }}
-          start: docker-compose up -d
+          start: docker compose up -d
           wait-on: 'http://localhost:3000'
           wait-on-timeout: 120
           # --- AJOUTS POUR LE DASHBOARD ---
